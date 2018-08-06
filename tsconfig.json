@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "lib": [
+      "dom",
+      "es2017"
+    ],
+    "target": "es5",
+    "outDir": "./build",
+    "module": "amd",
+    "allowJs": true,
+    "declaration": true,
+    "allowSyntheticDefaultImports": true
+  },
+  "include": [
+    "./types/*",
+    "./Tone/**/*"
+  ]
+}

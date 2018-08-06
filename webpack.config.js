@@ -1,5 +1,6 @@
 const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const { CheckerPlugin } = require("awesome-typescript-loader");
 
 ///////////////////////////////////////
 // Defaults
@@ -9,7 +10,7 @@ const defaults = {
 	mode : "development",
 	context : __dirname,
 	entry : {
-		Tone : "./Tone/index.js",
+		Tone : "./Tone/index.ts",
 	},
 	output : {
 		path : path.resolve(__dirname, "build"),
@@ -18,12 +19,21 @@ const defaults = {
 		libraryTarget : "umd",
 	},
 	resolve : {
+		extensions: ['.ts', '.js'],
 		modules : [
 			"node_modules",
 			path.resolve(__dirname, "."),
 			path.resolve(__dirname, "test")
 		],
 	},
+	module: {
+    rules: [
+      {
+        test: /\.ts?$/,
+        loader: 'awesome-typescript-loader'
+      }
+    ]
+  },
 	devtool : "cheap-source-map",
 };
 
@@ -49,6 +59,7 @@ const test = Object.assign({}, defaults, {
 		test : "./test/test.js",
 	},
 	plugins : [
+		new CheckerPlugin(),
 		new HtmlWebpackPlugin({
 			filename : "test.html",
 			template : "./test/index.html",
@@ -71,6 +82,6 @@ module.exports = env => {
 	} else if (env.production){
 		return production;
 	} else {
-		return scratch;		
+		return scratch;
 	}
 };
