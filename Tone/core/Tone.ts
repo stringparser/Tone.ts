@@ -1,12 +1,13 @@
+import Param = require("./Param");
+import Signal = require("./Signal");
+import Context = require("./Context");
+import TimeBase = require("../type/TimeBase");
 /**
  *  Tone.js
  *  @author Yotam Mann
  *  @license http://opensource.org/licenses/MIT MIT License
  *  @copyright 2014-2018 Yotam Mann
  */
-define(function(){
-
-	"use strict";
 
 	///////////////////////////////////////////////////////////////////////////
 	//	TONE
@@ -16,7 +17,14 @@ define(function(){
 	 *  @class  Tone is the base class of all other classes.
 	 *  @constructor
 	 */
-	var Tone = function(){
+class Tone {
+	debug?: boolean;
+	static Param: Param;
+	static Signal: Signal;
+	static Context: Context;
+	static TimeBase: TimeBase;
+
+	constructor(){
 		if (!(this instanceof Tone)){
 			throw new Error("constructor needs to be called with the 'new' keyword");
 		}
@@ -26,7 +34,7 @@ define(function(){
 	 *  @memberOf Tone#
 	 *  @returns {String} returns the name of the class as a string
 	 */
-	Tone.prototype.toString = function(){
+	toString(): string {
 		for (var className in Tone){
 			var isLetter = className[0].match(/^[A-Z]$/);
 			var sameConstructor = Tone[className] === this.constructor;
@@ -35,16 +43,16 @@ define(function(){
 			}
 		}
 		return "Tone";
-	};
+	}
 
 	/**
 	 *  @memberOf Tone#
 	 *  disconnect and dispose
 	 *  @returns {Tone} this
 	 */
-	Tone.prototype.dispose = function(){
+	dispose(): Tone {
 		return this;
-	};
+	}
 
 	///////////////////////////////////////////////////////////////////////////
 	//	GET/SET
@@ -57,7 +65,7 @@ define(function(){
 	 *  The last argument is an optional ramp time which
 	 *  will ramp any signal values to their destination value
 	 *  over the duration of the rampTime.
-	 *  @param {Object|String} params
+	 *  @param {Object|String} _param
 	 *  @param {Number=} value
 	 *  @param {Time=} rampTime
 	 *  @returns {Tone} this
@@ -76,13 +84,14 @@ define(function(){
 	 * 	"frequency" : 220
 	 * }, 3);
 	 */
-	Tone.prototype.set = function(params, value, rampTime){
+	set(_param: Object | string, value?: number, rampTime?: number): Tone {
+		const params = typeof _param === 'string'
+			? { [_param]: value }
+			: _param
+		;
+
 		if (Tone.isObject(params)){
 			rampTime = value;
-		} else if (Tone.isString(params)){
-			var tmpObj = {};
-			tmpObj[params] = value;
-			params = tmpObj;
 		}
 
 		paramLoop:
@@ -128,7 +137,7 @@ define(function(){
 			}
 		}
 		return this;
-	};
+	}
 
 	/**
 	 *  Get the object's attributes. Given no arguments get
@@ -147,16 +156,19 @@ define(function(){
 	 * //use dot notation to access deep properties
 	 * synth.get(["envelope.attack", "envelope.release"]);
 	 * //returns {"envelope" : {"attack" : 0.2, "release" : 0.4}}
-	 *  @param {Array=|string|undefined} params the parameters to get, otherwise will return
+	 *  @param {Array=|string|undefined} _params the parameters to get, otherwise will return
 	 *  					                  all available.
 	 *  @returns {Object}
 	 */
-	Tone.prototype.get = function(params){
-		if (Tone.isUndef(params)){
+	get(_params?: string[]): Object {
+		let params = null;
+
+		if (Tone.isUndef(_params)){
 			params = this._collectDefaults(this.constructor);
 		} else if (Tone.isString(params)){
 			params = [params];
 		}
+
 		var ret = {};
 		for (var i = 0; i < params.length; i++){
 			var attr = params[i];
@@ -188,7 +200,7 @@ define(function(){
 			}
 		}
 		return ret;
-	};
+	}
 
 	/**
 	 *  collect all of the default attributes in one
@@ -196,7 +208,7 @@ define(function(){
 	 *  @param {Function} constr the constructor to find the defaults from
 	 *  @return {Array} all of the attributes which belong to the class
 	 */
-	Tone.prototype._collectDefaults = function(constr){
+	private _collectDefaults(constr): string[]{
 		var ret = [];
 		if (Tone.isDefined(constr.defaults)){
 			ret = Object.keys(constr.defaults);
@@ -211,7 +223,7 @@ define(function(){
 			}
 		}
 		return ret;
-	};
+	}
 
 	///////////////////////////////////////////////////////////////////////////
 	//	DEFAULTS
@@ -225,7 +237,11 @@ define(function(){
 	 *  @return  {Object}  An object composed of the  defaults between the class' defaults
 	 *                        and the passed in arguments.
 	 */
-	Tone.defaults = function(values, keys, constr){
+	static defaults(
+		values: any[],
+		keys: string[],
+		constr: (Function | Object) & { defaults?: Object }
+	): Object {
 		var options = {};
 		if (values.length === 1 && Tone.isObject(values[0])){
 			options = values[0];
@@ -241,7 +257,7 @@ define(function(){
 		} else {
 			return options;
 		}
-	};
+	}
 
 	/**
 	 *  If the `given` parameter is undefined, use the `fallback`.
@@ -257,7 +273,7 @@ define(function(){
 	 *  @param  {*} fallback
 	 *  @return {*}
 	 */
-	Tone.defaultArg = function(given, fallback){
+	static defaultArg(given, fallback){
 		if (Tone.isObject(given) && Tone.isObject(fallback)){
 			var ret = {};
 			//make a deep copy of the given object
@@ -271,24 +287,24 @@ define(function(){
 		} else {
 			return Tone.isUndef(given) ? fallback : given;
 		}
-	};
+	}
 
 	///////////////////////////////////////////////////////////////////////////
 	//	DEBUGGING
 	///////////////////////////////////////////////////////////////////////////
 
 	/**
-	 *  Print the outputs to the console log for debugging purposes. 
+	 *  Print the outputs to the console log for debugging purposes.
 	 *  Prints the contents only if either the object has a property
 	 *  called `debug` set to true, or a variable called TONE_DEBUG_CLASS
-	 *  is set to the name of the class. 
+	 *  is set to the name of the class.
 	 *  @example
 	 * //prints all logs originating from Tone.OscillatorNode
 	 * window.TONE_DEBUG_CLASS = "OscillatorNode"
 	 *  @param {*} args Any arguments to print to the console.
 	 *  @private
 	 */
-	Tone.prototype.log = function(){
+	log(){
 		//if the object is either set to debug = true
 		//or if there is a string on the window with the class name
 		if (this.debug || this.toString() === window.TONE_DEBUG_CLASS){
@@ -297,19 +313,19 @@ define(function(){
 			// eslint-disable-next-line no-console
 			console.log.apply(undefined, args);
 		}
-	};
+	}
 
 	/**
-	 *  Assert that the statement is true, otherwise invoke the error. 
+	 *  Assert that the statement is true, otherwise invoke the error.
 	 *  @param {Boolean} statement
 	 *  @param {String} error The message which is passed into an Error
 	 *  @private
 	 */
-	Tone.prototype.assert = function(statement, error){
+	assert(statement: boolean, error: string){
 		if (!statement){
 			throw new Error(error);
 		}
-	};
+	}
 
 	///////////////////////////////////////////////////////////////////////////
 	//	CONNECTIONS
@@ -322,15 +338,17 @@ define(function(){
 	 *  @memberOf Tone
 	 *  @static
 	 */
-	Tone.connectSeries = function(){
-		var currentUnit = arguments[0];
-		for (var i = 1; i < arguments.length; i++){
-			var toUnit = arguments[i];
+	static connectSeries(...args: any[]) {
+		var currentUnit = args[0];
+
+		for (var i = 1; i < args.length; i++){
+			var toUnit = args[i];
 			currentUnit.connect(toUnit);
 			currentUnit = toUnit;
 		}
+
 		return Tone;
-	};
+	}
 
 	///////////////////////////////////////////////////////////////////////////
 	// TYPE CHECKING
@@ -343,9 +361,9 @@ define(function(){
 	 *  @static
 	 *  @memberOf Tone
 	 */
-	Tone.isUndef = function(val){
+	static isUndef(val): boolean {
 		return typeof val === "undefined";
-	};
+	}
 
 	/**
 	 *  Test if the arg is not undefined
@@ -354,9 +372,9 @@ define(function(){
 	 *  @static
 	 *  @memberOf Tone
 	 */
-	Tone.isDefined = function(val){
+	static isDefined(val: any): boolean {
 		return !Tone.isUndef(val);
-	};
+	}
 
 	/**
 	 *  Test if the arg is a function
@@ -365,9 +383,9 @@ define(function(){
 	 *  @static
 	 *  @memberOf Tone
 	 */
-	Tone.isFunction = function(val){
+	static isFunction(val): boolean {
 		return typeof val === "function";
-	};
+	}
 
 	/**
 	 *  Test if the argument is a number.
@@ -376,9 +394,9 @@ define(function(){
 	 *  @static
 	 *  @memberOf Tone
 	 */
-	Tone.isNumber = function(arg){
+	static isNumber(arg: any): boolean {
 		return (typeof arg === "number");
-	};
+	}
 
 	/**
 	 *  Test if the given argument is an object literal (i.e. `{}`);
@@ -387,9 +405,9 @@ define(function(){
 	 *  @static
 	 *  @memberOf Tone
 	 */
-	Tone.isObject = function(arg){
+	static isObject(arg: any): boolean {
 		return (Object.prototype.toString.call(arg) === "[object Object]" && arg.constructor === Object);
-	};
+	}
 
 	/**
 	 *  Test if the argument is a boolean.
@@ -398,9 +416,9 @@ define(function(){
 	 *  @static
 	 *  @memberOf Tone
 	 */
-	Tone.isBoolean = function(arg){
+	static isBoolean(arg: any): boolean {
 		return (typeof arg === "boolean");
-	};
+	}
 
 	/**
 	 *  Test if the argument is an Array
@@ -409,9 +427,9 @@ define(function(){
 	 *  @static
 	 *  @memberOf Tone
 	 */
-	Tone.isArray = function(arg){
+	static isArray(arg: any): boolean {
 		return (Array.isArray(arg));
-	};
+	}
 
 	/**
 	 *  Test if the argument is a string.
@@ -420,9 +438,9 @@ define(function(){
 	 *  @static
 	 *  @memberOf Tone
 	 */
-	Tone.isString = function(arg){
+	static isString(arg: any): boolean {
 		return (typeof arg === "string");
-	};
+	}
 
 	/**
 	 *  Test if the argument is in the form of a note in scientific pitch notation.
@@ -432,22 +450,22 @@ define(function(){
 	 *  @static
 	 *  @memberOf Tone
 	 */
-	Tone.isNote = function(arg){
+	static isNote(arg): boolean {
 		return Tone.isString(arg) && /^([a-g]{1}(?:b|#|x|bb)?)(-?[0-9]+)/i.test(arg);
-	};
+	}
 
 	/**
 	 *  An empty function.
 	 *  @static
 	 */
-	Tone.noOp = function(){};
+	static noOp = function(){}
 
 	/**
 	 *  Make the property not writable. Internal use only.
 	 *  @private
 	 *  @param  {String}  property  the property to make not writable
 	 */
-	Tone.prototype._readOnly = function(property){
+	private _readOnly(property: string) {
 		if (Array.isArray(property)){
 			for (var i = 0; i < property.length; i++){
 				this._readOnly(property[i]);
@@ -458,14 +476,14 @@ define(function(){
 				enumerable : true,
 			});
 		}
-	};
+	}
 
 	/**
 	 *  Make an attribute writeable. Interal use only.
 	 *  @private
 	 *  @param  {String}  property  the property to make writable
 	 */
-	Tone.prototype._writable = function(property){
+	private _writable(property: string) {
 		if (Array.isArray(property)){
 			for (var i = 0; i < property.length; i++){
 				this._writable(property[i]);
@@ -475,17 +493,17 @@ define(function(){
 				writable : true,
 			});
 		}
-	};
+	}
 
 	/**
 	 * Possible play states.
 	 * @enum {String}
 	 */
-	Tone.State = {
+	static State = {
 		Started : "started",
 		Stopped : "stopped",
 		Paused : "paused",
-	};
+	}
 
 	///////////////////////////////////////////////////////////////////////////
 	// CONVERSIONS
@@ -498,10 +516,10 @@ define(function(){
 	 *  @static
 	 *  @memberOf Tone
 	 */
-	Tone.equalPowerScale = function(percent){
+	static equalPowerScale(percent: number): number {
 		var piFactor = 0.5 * Math.PI;
 		return Math.sin(percent * piFactor);
-	};
+	}
 
 	/**
 	 *  Convert decibels into gain.
@@ -510,9 +528,9 @@ define(function(){
 	 *  @static
 	 *  @memberOf Tone
 	 */
-	Tone.dbToGain = function(db){
+	static dbToGain(db: number): number {
 		return Math.pow(10, db / 20);
-	};
+	}
 
 	/**
 	 *  Convert gain to decibels.
@@ -521,9 +539,9 @@ define(function(){
 	 *  @static
 	 *  @memberOf Tone
 	 */
-	Tone.gainToDb = function(gain){
+	static gainToDb(gain): number {
 		return 20 * (Math.log(gain) / Math.LN10);
-	};
+	}
 
 	/**
 	 *  Convert an interval (in semitones) to a frequency ratio.
@@ -536,9 +554,9 @@ define(function(){
 	 * tone.intervalToFrequencyRatio(12); // 2
 	 * tone.intervalToFrequencyRatio(-12); // 0.5
 	 */
-	Tone.intervalToFrequencyRatio = function(interval){
+	static intervalToFrequencyRatio(interval) {
 		return Math.pow(2, (interval/12));
-	};
+	}
 
 	///////////////////////////////////////////////////////////////////////////
 	//	TIMING
@@ -550,9 +568,9 @@ define(function(){
 	 *  @return {Number} the currentTime from the AudioContext
 	 *  @memberOf Tone#
 	 */
-	Tone.prototype.now = function(){
-		return Tone.context.now();
-	};
+	now(): number {
+		return Tone.context.currentTime;
+	}
 
 	/**
 	 *  Return the current time of the AudioContext clock plus
@@ -561,9 +579,9 @@ define(function(){
 	 *  @static
 	 *  @memberOf Tone
 	 */
-	Tone.now = function(){
-		return Tone.context.now();
-	};
+	static now(): number {
+		return Tone.context.currentTime;
+	}
 
 	/**
 	 *  Return the current time of the AudioContext clock without
@@ -571,9 +589,9 @@ define(function(){
 	 *  @return {Number} the currentTime from the AudioContext
 	 *  @memberOf Tone#
 	 */
-	Tone.prototype.immediate = function(){
+	immediate(): number {
 		return Tone.context.currentTime;
-	};
+	}
 
 	/**
 	 *  Return the current time of the AudioContext clock without
@@ -581,9 +599,9 @@ define(function(){
 	 *  @return {Number} the currentTime from the AudioContext
 	 *  @memberOf Tone
 	 */
-	Tone.immediate = function(){
+	static immediate(): number {
 		return Tone.context.currentTime;
-	};
+	}
 
 	///////////////////////////////////////////////////////////////////////////
 	//	INHERITANCE
@@ -603,7 +621,7 @@ define(function(){
 	 *                             if no parent is supplied, the child
 	 *                             will inherit from Tone
 	 */
-	Tone.extend = function(child, parent){
+	static extend(child: Function, parent?: Function) {
 		if (Tone.isUndef(parent)){
 			parent = Tone;
 		}
@@ -613,7 +631,7 @@ define(function(){
 		/** @override */
 		child.prototype.constructor = child;
 		child._super = parent;
-	};
+	}
 
 	///////////////////////////////////////////////////////////////////////////
 	//	CONTEXT
@@ -625,20 +643,18 @@ define(function(){
 	 *  @name context
 	 *  @memberOf Tone
 	 */
-	Object.defineProperty(Tone, "context", {
-		get : function(){
-			return window.TONE_AUDIO_CONTEXT;
-		},
-		set : function(context){
-			if (Tone.Context && context instanceof Tone.Context){
-				window.TONE_AUDIO_CONTEXT = context;
-			} else {
-				window.TONE_AUDIO_CONTEXT = new Tone.Context(context);
-			}
-			//initialize the new audio context
-			Tone.Context.emit("init", window.TONE_AUDIO_CONTEXT);
+	static get context() {
+		return window.TONE_AUDIO_CONTEXT;
+	}
+	static set context(context) {
+		if (Tone.Context && context instanceof Tone.Context) {
+			window.TONE_AUDIO_CONTEXT = context;
+		} else {
+			window.TONE_AUDIO_CONTEXT = new Tone.Context(context);
 		}
-	});
+		//initialize the new audio context
+		Tone.Context.emit("init", window.TONE_AUDIO_CONTEXT);
+	}
 
 	/**
 	 *  The AudioContext
@@ -647,11 +663,9 @@ define(function(){
 	 *  @memberOf Tone#
 	 *  @readOnly
 	 */
-	Object.defineProperty(Tone.prototype, "context", {
-		get : function(){
-			return Tone.context;
-		}
-	});
+	get context() {
+		return Tone.context;
+	}
 
 	/**
 	 *  Tone automatically creates a context on init, but if you are working
@@ -661,9 +675,9 @@ define(function(){
 	 *  @static
 	 *  @param {AudioContext} ctx The new audio context to set
 	 */
-	Tone.setContext = function(ctx){
+	static setContext(ctx: AudioContext){
 		Tone.context = ctx;
-	};
+	}
 
 	///////////////////////////////////////////////////////////////////////////
 	//	ATTRIBUTES
@@ -677,11 +691,9 @@ define(function(){
 	 *  @static
 	 *  @readOnly
 	 */
-	Object.defineProperty(Tone.prototype, "blockTime", {
-		get : function(){
-			return 128 / this.context.sampleRate;
-		}
-	});
+	get blockTime() {
+		return 128 / this.context.sampleRate;
+	}
 
 	/**
 	 *  The duration in seconds of one sample.
@@ -691,11 +703,9 @@ define(function(){
 	 *  @static
 	 *  @readOnly
 	 */
-	Object.defineProperty(Tone.prototype, "sampleTime", {
-		get : function(){
-			return 1 / this.context.sampleRate;
-		}
-	});
+	get sampleTime() {
+		return 1 / this.context.sampleRate;
+	}
 
 	/**
 	 *  Whether or not all the technologies that Tone.js relies on are supported by the current browser.
@@ -705,13 +715,11 @@ define(function(){
 	 *  @readOnly
 	 *  @static
 	 */
-	Object.defineProperty(Tone, "supported", {
-		get : function(){
-			var hasAudioContext = window.hasOwnProperty("AudioContext") || window.hasOwnProperty("webkitAudioContext");
-			var hasPromises = window.hasOwnProperty("Promise");
-			return hasAudioContext && hasPromises;
-		}
-	});
+	static get supported() {
+		var hasAudioContext = window.hasOwnProperty("AudioContext") || window.hasOwnProperty("webkitAudioContext");
+		var hasPromises = window.hasOwnProperty("Promise");
+		return hasAudioContext && hasPromises;
+	}
 
 	/**
 	 *  Boolean value if the audio context has been initialized.
@@ -721,29 +729,27 @@ define(function(){
 	 *  @name initialized
 	 *  @readOnly
 	 */
-	Object.defineProperty(Tone, "initialized", {
-		get : function(){
-			return Boolean(window.TONE_AUDIO_CONTEXT);
-		}
-	});
+	static get initialized() {
+		return Boolean(window.TONE_AUDIO_CONTEXT)
+	}
 
 	/**
 	 *  Get the context when it becomes available
 	 *  @param  {Function}  resolve  Callback when the context is initialized
 	 *  @return  {Tone}
 	 */
-	Tone.getContext = function(resolve){
+	static getContext(resolve){
 		if (Tone.initialized){
 			resolve(Tone.context);
 		} else {
-			var resCallback = function(){
+			var resCallback = () => {
 				resolve(Tone.context);
 				Tone.Context.off("init", resCallback);
 			};
 			Tone.Context.on("init", resCallback);
 		}
 		return Tone;
-	};
+	}
 
 	/**
 	 * The version number
@@ -751,7 +757,7 @@ define(function(){
 	 * @static
 	 */
 
-	Tone.version = "r13-dev";
+	static version: string = "r13-dev";
+}
 
-	return Tone;
-});
+export default Tone;

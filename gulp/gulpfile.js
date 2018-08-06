@@ -15,7 +15,7 @@ const argv = require("yargs")
  */
 gulp.task("collectDependencies", function(done){
 	//collect all of the files into one file prefixed with 'require'
-	glob("../Tone/*/*.js", function(err, files){
+	glob("../Tone/*/*.{js,ts}", function(err, files){
 		var modules = [];
 		// gutil.log(gutil.colors.magenta("files found:", files.length));
 		files.forEach(function(file){
@@ -26,9 +26,12 @@ gulp.task("collectDependencies", function(done){
 			}
 		});
 		//write it to disk
-		var reqString = modules.map(r => `require("${r}");`).join("\n");
-		reqString += "\nmodule.exports = require(\"Tone/core/Tone\");\n";
-		fs.writeFile("../Tone/index.js", reqString, done);
+		var reqString = modules.map(r => `import "${r}";`).join("\n");
+		reqString += [
+			'import Tone = require("Tone/core/Tone");',
+			'export default Tone;'
+		].join('\n') + '\n';
+		fs.writeFile("../Tone/index.ts", reqString, done);
 	});
 });
 
