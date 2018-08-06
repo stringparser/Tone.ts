@@ -22,15 +22,13 @@ gulp.task("collectDependencies", function(done){
 			//remove the precedding ../ and the trailing .js
 			var module = file.substring(3, file.length - 3);
 			if (module !== "Tone/core/Tone"){
-				modules.push(module);
+				modules.push(`import "${module}";`);
+			} else {
+				modules.push(`import Tone from "${module}";`);
 			}
 		});
 		//write it to disk
-		var reqString = modules.map(r => `import "${r}";`).join("\n");
-		reqString += [
-			'import Tone = require("Tone/core/Tone");',
-			'export default Tone;'
-		].join('\n') + '\n';
+		var reqString = modules.join("\n") + '\nexport default Tone;\n';
 		fs.writeFile("../Tone/index.ts", reqString, done);
 	});
 });

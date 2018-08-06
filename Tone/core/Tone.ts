@@ -1,7 +1,4 @@
-import Param = require("./Param");
-import Signal = require("./Signal");
-import Context = require("./Context");
-import TimeBase = require("../type/TimeBase");
+/// <
 /**
  *  Tone.js
  *  @author Yotam Mann
@@ -19,10 +16,10 @@ import TimeBase = require("../type/TimeBase");
 	 */
 class Tone {
 	debug?: boolean;
-	static Param: Param;
-	static Signal: Signal;
-	static Context: Context;
-	static TimeBase: TimeBase;
+	static Param: any;
+	static Signal: any;
+	static Context: any;
+	static TimeBase: any;
 
 	constructor(){
 		if (!(this instanceof Tone)){
